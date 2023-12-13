@@ -1,2 +1,10 @@
 *.pyc
 __pychache__
+.ipynb_checkpoints
+
+datasets
+output_summary_with_feedback/*.mp4
+output_summary_without_feedback/*.mp4
+log/*.tar
+models
+temp

@@ -54,18 +54,51 @@ def compute_reward(full_video, seq, actions, positive_feedback_idxes, negative_f
             pick_mat = pick_idxs.expand(num_picks, num_picks)
             temp_dist_mat = torch.abs(pick_mat - pick_mat.t())
             dissim_submat[temp_dist_mat > temp_dist_thre] = 1.
+
         reward_div = dissim_submat.sum() / (num_picks * (num_picks - 1.))
 
+
+        # designed reward function.
+        seq_sub = normed_seq[pick_idxs]
+        
+        for i, seq_i in enumerate(seq_sub):
+            for j, seq_j in enumerate(seq_sub):
+                diff_seq = seq_j - seq_i 
+                   
+                if i == j:
+                    if i == 0:
+                        min_reward = torch.matmul(diff_seq, diff_seq.t())+1e9
+                    else:
+                        continue
+                        
+                if j == 1:
+                    min_reward = torch.matmul(diff_seq, diff_seq.t())
+                else:
+                    min_reward = torch.min(torch.matmul(diff_seq, diff_seq.t()), min_reward)
+            
+            if i == 0:
+                des_reward = min_reward
+            else:
+                des_reward += min_reward
+            
+                                
+        context_reward = torch.exp(-des_reward/num_picks)        
+
+        
+        # Inteactive summarization reward
         # Computation for negative and positive read_feedback
         positive_feedback_idxes = torch.tensor(positive_feedback_idxes)
         negative_feedback_idxes = torch.tensor(negative_feedback_idxes)
         positive_feedback_feat = full_video[positive_feedback_idxes,:]
         negative_feedback_feat = full_video[negative_feedback_idxes,:]
+        
+        
         # Similarity with positive feedback
         positive_feedback_feat = positive_feedback_feat/ positive_feedback_feat.norm(p=2, dim=1, keepdim=True)
         sim_mat = torch.matmul(normed_seq, positive_feedback_feat.t())
         sim_submat = sim_mat[pick_idxs,:][:,:]
         reward_sim_with_positive = sim_submat.sum()/ (num_picks * (len(positive_feedback_idxes)-1.) )
+        
         # Dissimiilarity with negative feedback
         negative_feedback_feat = negative_feedback_feat/ negative_feedback_feat.norm(p=2, dim=1, keepdim=True)
         dissim_mat = 1. - torch.matmul(normed_seq, negative_feedback_feat.t())

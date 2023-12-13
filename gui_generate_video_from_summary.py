@@ -2,11 +2,14 @@ import cv2
 import os
 import argparse
 
+dataset_path = "/mnt/disk1/akshitj/rl/project/interact_summ_code/datasets/"
+
+
 def generate_video_from_summary(summary_file_path, dataset, video_name):
     if dataset == 'Disney':
         input_vid_dir = "/media/enigma/f0762f3b-20d1-42a7-9fe1-60385c4a8a3e/video_summarization/actor_critic/dataset/Disney/full_videos/"
     if dataset == 'UTE':
-        input_vid_dir = "/media/enigma/f0762f3b-20d1-42a7-9fe1-60385c4a8a3e/video_summarization/actor_critic/dataset/UTE/full_videos/"
+        input_vid_dir = dataset_path + "UTE_Video/"
     if dataset == 'HUJI':
         input_vid_dir = "/media/enigma/f0762f3b-20d1-42a7-9fe1-60385c4a8a3e/video_summarization/actor_critic/dataset/HUJI/full_videos/"
 

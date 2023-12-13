@@ -73,7 +73,8 @@ def compute_reward(full_video, seq, actions, ignore_far_sim=True, temp_dist_thre
         final_distances = final_distances[1:]
         reward_ind = -final_distances.mean()
         #reward = 4*reward_dissim_with_negative + .5* reward_div + .2*reward_ind # interactive reward
-        print (.8*reward_div , .2* reward_ind)
+        print ("Reward Values: ", .8*reward_div , .2* reward_ind)
+
         reward =  .8*reward_div + .2* reward_ind # interactive reward
         #print (1.2*reward_div, .3*reward_ind)
         #reward =  1.2*reward_div + .3*reward_ind # normal summary

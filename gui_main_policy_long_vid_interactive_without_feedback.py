@@ -23,6 +23,7 @@ import timeit
 from tqdm import tqdm
 import csv
 import random
+import pickle
 
 
 def epoch_plot(epoch , y , save_file):
@@ -137,7 +138,7 @@ def generate_normal_summary(dataset_name, video_name):
     my_epis_reward = 0
     my_old_reward = 0
     best_f_score = 0
-
+    
     if use_gpu:
         print("Currently using GPU {}".format(gpu))
         cudnn.benchmark = True
@@ -200,8 +201,15 @@ def generate_normal_summary(dataset_name, video_name):
         for vid_idx in vid_idxes:
             vid_name = train_keys[vid_idx]
             print ('Video Name: ',vid_name)
-            full_video = dataset[vid_name]['features_c3d'][...]
+            
+            # if using cnn features then use the below code and comment the next one 
+            # full_video = dataset[vid_name]['features_cnn'][...] 
+            
+            full_video = dataset[vid_name]['features_c3d']
+            
+            print(full_video.shape)
             print ('--------------Features Normalized----------------')
+
             full_video = full_video/np.max(full_video)
             video_length = full_video.shape[0]
             print ('Total Frames: ', video_length)
@@ -239,7 +247,7 @@ def generate_normal_summary(dataset_name, video_name):
                         expected_reward = log_probs.mean() * (reward - baselines[vid_name])
                         cost -= expected_reward # minimize negative expected reward
                         epis_rewards.append(reward.item())
-
+                        
                     pseudo_batch_cost += cost
                     pseudo_batch_counter += 1
                     vid_pass_reward += np.mean(epis_rewards)
@@ -288,17 +296,22 @@ def generate_normal_summary(dataset_name, video_name):
             epoch_reward += vid_reward
             #print ("Final reward of the video is: ", vid_reward.data.tolist())
         epoch_reward = epoch_reward/(len(vid_idxes))
-        final_epoch_rewards.append(epoch_reward)
+        
+        final_epoch_rewards.append(epoch_reward.cpu().detach().item())
         print("epoch {}/{}\t reward {}\t".format(epoch+1, max_epoch, epoch_reward))
 
-
-        epoch_plot(epoch+1, final_epoch_rewards , 'Plot_without_feedback_'+dataset_name+'_'+ video_name +'_model_epoch_' + str(epoch+1) + '_passes_' + str(max_passes) + '_subshot_len_' + str(subshot_length) + '_batch_size_' + str(pseudo_batch_size) + '.png')
+        # import pdb;pdb.set_trace()
+        # epoch_plot(epoch+1, final_epoch_rewards , 'Plot_without_feedback_'+dataset_name+'_'+ video_name +'_model_epoch_' + str(epoch+1) + '_passes_' + str(max_passes) + '_subshot_len_' + str(subshot_length) + '_batch_size_' + str(pseudo_batch_size) + '.png')
 
         model_state_dict = model.module.state_dict() if use_gpu else model.state_dict()
-        model_save_path = osp.join(save_dir,dataset_name+'_'+ video_name + '_policy_grad_without_feedback_epoch_' + str(epoch+1) + '_passes_' + str(max_passes) + '_subshot_len_' + str(subshot_length) + '_batch_size_' + str(pseudo_batch_size) +'.pth.tar')
+        model_save_path = osp.join(save_dir, dataset_name+'_'+ video_name + '_policy_grad_without_feedback_epoch_' + str(epoch+1) + '_passes_' + str(max_passes) + '_subshot_len_' + str(subshot_length) + '_batch_size_' + str(pseudo_batch_size) +'.pth.tar')
         save_checkpoint(model_state_dict, model_save_path)
         print("Model saved to {}".format(model_save_path))
-
+    
+    reward_pkl_path = './log/plot_epochs_vs_reward_' + 'Plot_without_feedback_'+dataset_name+'_'+ video_name +'_model_max_epoch_' + str(max_passes) + '_subshot_len_' + str(subshot_length) + '_batch_size_' + str(pseudo_batch_size) + '.pkl'
+    with open(f'parrot_witout_feedback.pkl_{dataset_name}_{video_name}', 'wb') as f:
+       pickle.dump(final_epoch_rewards, f)       
+    
     elapsed = round(time.time() - start_time)
     elapsed = str(datetime.timedelta(seconds=elapsed))
     print("Finished. Total elapsed time (h:m:s): {}".format(elapsed))

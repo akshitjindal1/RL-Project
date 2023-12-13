@@ -23,6 +23,7 @@ import timeit
 from tqdm import tqdm
 import csv
 import random
+import pickle
 
 
 def epoch_plot(epoch , y , save_file):
@@ -96,7 +97,7 @@ def write_one_hot_summary(file_name, idxes, video_length):
         summary_file.write(str(frame_select))
         summary_file.write("\n")
 
-input_dim = 512
+input_dim = 512 # if using cnn features then replace 512 with 1024
 hidden_dim = 256
 num_layers = 1
 rnn_cell = 'lstm'
@@ -197,7 +198,13 @@ def generate_summary_with_feedback(dataset_name, video_name, normal_summary_path
         for vid_idx in vid_idxes:
             vid_name = train_keys[vid_idx]
             print ('Video Name: ',vid_name)
+            
+            # if using cnn features then use the below code and comment the next one 
+            # full_video = dataset[vid_name]['features_cnn'][...] 
+            
             full_video = dataset[vid_name]['features_c3d'][...]
+            
+            
             print ('--------------Features Normalized----------------')
             full_video = full_video/np.max(full_video)
             video_length = full_video.shape[0]
@@ -253,7 +260,7 @@ def generate_summary_with_feedback(dataset_name, video_name, normal_summary_path
                         summary_update_count += 1
                         print ('SUMMARY UPDATE NUMBER:  ----------------->>', summary_update_count)
                         print ('Current Reward: ', my_epis_reward)
-                        summary_file_name = 'output_summary_with_feedback/'+ vid_name+ '_'+dataset_name + '_policy_grad_summary_length_' +str(summary_length)+'_subshot_size_' + str(subshot_length) + '_hidden_dim_' + str(hidden_dim) + '_summary_with_feedback.txt'
+                        summary_file_name = 'output_summary_with_feedback/'+ vid_name+ '_'+dataset_name + '_policy_grad_summary_length_' +str(summary_length)+'_subshot_size_' + str(subshot_length) + '_hidden_dim_' + str(hidden_dim) + '_summary_with_feedback_noeating_onlydrive.txt'
                         write_one_hot_summary(summary_file_name, idxes, video_length)
 
                     else:
@@ -288,19 +295,23 @@ def generate_summary_with_feedback(dataset_name, video_name, normal_summary_path
             epoch_reward += vid_reward
             #print ("Final reward of the video is: ", vid_reward.data.tolist())
         epoch_reward = epoch_reward/(len(vid_idxes))
-        final_epoch_rewards.append(epoch_reward)
+        final_epoch_rewards.append(epoch_reward.cpu().detach().item())
         print("epoch {}/{}\t reward {}\t".format(epoch+1, max_epoch, epoch_reward))
         #cur_f_score = evaluate(model, dataset, test_keys, use_gpu)
         #if cur_f_score > best_f_score:
         #    best_f_score = cur_f_score
         #    best_model = epoch+1
 
-        epoch_plot(epoch+1, final_epoch_rewards , 'Plot_with_feedback_'+dataset_name+'_'+ video_name +'_model_epoch_' + str(epoch+1) + '_passes_' + str(max_passes) + '_subshot_len_' + str(subshot_length) + '_batch_size_' + str(pseudo_batch_size) + '.png')
+        # epoch_plot(epoch+1, final_epoch_rewards , 'Plot_with_feedback_'+dataset_name+'_'+ video_name +'_model_epoch_' + str(epoch+1) + '_passes_' + str(max_passes) + '_subshot_len_' + str(subshot_length) + '_batch_size_' + str(pseudo_batch_size) + '.png')
 
         model_state_dict = model.module.state_dict() if use_gpu else model.state_dict()
         model_save_path = osp.join(save_dir, dataset_name + '_'+ video_name + '_policy_grad_with_feedback_epoch_' + str(epoch+1) + '_passes_' + str(max_passes) + '_subshot_len_' + str(subshot_length) + '_batch_size_' + str(pseudo_batch_size) +'.pth.tar')
         save_checkpoint(model_state_dict, model_save_path)
         print("Model saved to {}".format(model_save_path))
+    
+    with open(f'parrot_with_feedback.pkl_{video_name}', 'wb') as f:
+        pickle.dump(final_epoch_rewards, f)  
+    
 
 
     elapsed = round(time.time() - start_time)

@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle as pkl
 
 def summary_plot(epoch, y , save_file):
     x=[]
@@ -31,9 +32,23 @@ def hist_cluster(summary_path, win):
     print (len(hist_clstr))
     return hist_clstr
 
-def plot_normal_and_custom_summary(normal_summary_path, customized_summary_path):
+def plot_normal_and_custom_summary(normal_summary_path, customized_summary_path,dataset_name, video_name):
     win= 10
     hist_cluster_normal = hist_cluster(normal_summary_path, win)
     hist_cluster_custom = hist_cluster(customized_summary_path, win)
-    summary_plot(len(hist_cluster_normal), hist_cluster_normal, 'Plot_normal_summary.png')
-    summary_plot(len(hist_cluster_custom), hist_cluster_custom, 'Plot_customized_summary.png')
+    
+    pickle_base_path = f'./plot_comparison/plot_vs_reward_{dataset_name}_{video_name}'
+    
+    normal_summary = pickle_base_path + 'Plot_normal_summary.pkl'
+    customized_summary = pickle_base_path + 'Plot_customized_summary.pkl'
+    
+    with open(normal_summary, 'wb') as f:
+        pkl.dump(hist_cluster_normal, f)
+    
+    
+    with open(customized_summary, 'wb') as f:
+        pkl.dump(hist_cluster_custom, f)
+        
+    # summary_plot(len(hist_cluster_normal), hist_cluster_normal, 'Plot_normal_summary.png')
+    # summary_plot(len(hist_cluster_custom), hist_cluster_custom, 'Plot_customized_summary.png')
+
